@@ -2,7 +2,6 @@ module DateTime exposing (..)
 
 import Date
 import Iso8601
-import String.Extra as String
 import Time
 import Time.Extra
 
@@ -15,36 +14,40 @@ type No
     = No
 
 
+type NotApplicable
+    = NotApplicable
+
+
 type DateTime units
     = DateTime Time.Posix
 
 
 type alias Years =
-    { year : Yes, month : No, day : No, hour : No, minute : No, second : No, millis : No }
+    { year : Yes, month : No, day : No, hour : No, minute : No, second : No, millis : No, zone : NotApplicable }
 
 
 type alias Months =
-    { year : Yes, month : Yes, day : No, hour : No, minute : No, second : No, millis : No }
+    { year : Yes, month : Yes, day : No, hour : No, minute : No, second : No, millis : No, zone : NotApplicable }
 
 
 type alias Days =
-    { year : Yes, month : Yes, day : Yes, hour : No, minute : No, second : No, millis : No }
+    { year : Yes, month : Yes, day : Yes, hour : No, minute : No, second : No, millis : No, zone : NotApplicable }
 
 
 type alias Hours =
-    { year : Yes, month : Yes, day : Yes, hour : Yes, minute : No, second : No, millis : No }
+    { year : Yes, month : Yes, day : Yes, hour : Yes, minute : No, second : No, millis : No, zone : No }
 
 
 type alias Minutes =
-    { year : Yes, month : Yes, day : Yes, hour : Yes, minute : Yes, second : No, millis : No }
+    { year : Yes, month : Yes, day : Yes, hour : Yes, minute : Yes, second : No, millis : No, zone : No }
 
 
 type alias Seconds =
-    { year : Yes, month : Yes, day : Yes, hour : Yes, minute : Yes, second : Yes, millis : No }
+    { year : Yes, month : Yes, day : Yes, hour : Yes, minute : Yes, second : Yes, millis : No, zone : No }
 
 
 type alias Millis =
-    { year : Yes, month : Yes, day : Yes, hour : Yes, minute : Yes, second : Yes, millis : Yes }
+    { year : Yes, month : Yes, day : Yes, hour : Yes, minute : Yes, second : Yes, millis : Yes, zone : No }
 
 
 type alias WithYears a =
@@ -76,7 +79,7 @@ type alias WithMillis a =
 
 
 
--- CREATE
+-- WITH
 
 
 withYear : Int -> DateTime Years
@@ -117,6 +120,20 @@ withSecond second (DateTime time) =
 withMillis : Int -> DateTime Seconds -> DateTime Millis
 withMillis millis (DateTime time) =
     DateTime <| Time.Extra.add Time.Extra.Millisecond millis Time.utc time
+
+
+withZone : Time.Zone -> DateTime { a | zone : No } -> DateTime { a | zone : Yes }
+withZone zone (DateTime time) =
+    DateTime <| Time.Extra.add Time.Extra.Minute (Time.Extra.toOffset zone time) zone time
+
+
+withSameZone : DateTime { a | zone : No } -> DateTime { a | zone : Yes }
+withSameZone (DateTime time) =
+    DateTime time
+
+
+
+-- FROM
 
 
 fromMillis : Int -> DateTime Millis
@@ -207,22 +224,22 @@ toWeekday (DateTime time) =
     Time.toWeekday Time.utc time
 
 
-toHour : DateTime (WithHours a) -> Int
+toHour : DateTime (WithHours { a | zone : Yes }) -> Int
 toHour (DateTime time) =
     Time.toHour Time.utc time
 
 
-toMinute : DateTime (WithMinutes a) -> Int
+toMinute : DateTime (WithMinutes { a | zone : Yes }) -> Int
 toMinute (DateTime time) =
     Time.toMinute Time.utc time
 
 
-toSecond : DateTime (WithSeconds a) -> Int
+toSecond : DateTime (WithSeconds { a | zone : Yes }) -> Int
 toSecond (DateTime time) =
     Time.toSecond Time.utc time
 
 
-toMillis : DateTime (WithMillis a) -> Int
+toMillis : DateTime (WithMillis { a | zone : Yes }) -> Int
 toMillis (DateTime time) =
     Time.toMillis Time.utc time
 
@@ -231,37 +248,37 @@ toMillis (DateTime time) =
 -- MANIPULATE
 
 
-addYears : Int -> DateTime (WithYears a) -> DateTime (WithYears a)
+addYears : Int -> DateTime (WithYears { a | zone : No }) -> DateTime (WithYears { a | zone : No })
 addYears =
     add Time.Extra.Year
 
 
-addMonths : Int -> DateTime (WithMonths a) -> DateTime (WithMonths a)
+addMonths : Int -> DateTime (WithMonths { a | zone : No }) -> DateTime (WithMonths { a | zone : No })
 addMonths =
     add Time.Extra.Month
 
 
-addDays : Int -> DateTime (WithDays a) -> DateTime (WithDays a)
+addDays : Int -> DateTime (WithDays { a | zone : No }) -> DateTime (WithDays { a | zone : No })
 addDays =
     add Time.Extra.Day
 
 
-addHours : Int -> DateTime (WithHours a) -> DateTime (WithHours a)
+addHours : Int -> DateTime (WithHours { a | zone : No }) -> DateTime (WithHours { a | zone : No })
 addHours =
     add Time.Extra.Hour
 
 
-addMinutes : Int -> DateTime (WithMinutes a) -> DateTime (WithMinutes a)
+addMinutes : Int -> DateTime (WithMinutes { a | zone : No }) -> DateTime (WithMinutes { a | zone : No })
 addMinutes =
     add Time.Extra.Minute
 
 
-addSeconds : Int -> DateTime (WithSeconds a) -> DateTime (WithSeconds a)
+addSeconds : Int -> DateTime (WithSeconds { a | zone : No }) -> DateTime (WithSeconds { a | zone : No })
 addSeconds =
     add Time.Extra.Second
 
 
-addMilliseconds : Int -> DateTime (WithMillis a) -> DateTime (WithMillis a)
+addMilliseconds : Int -> DateTime (WithMillis { a | zone : No }) -> DateTime (WithMillis { a | zone : No })
 addMilliseconds =
     add Time.Extra.Millisecond
 
@@ -277,55 +294,50 @@ add interval int (DateTime time) =
 -- DIFF
 
 
-diffYears : DateTime (WithYears a) -> DateTime (WithYears a) -> Int
+diffYears : DateTime (WithYears a) -> DateTime (WithYears b) -> Int
 diffYears =
     diff Time.Extra.Year
 
 
-diffMonths : DateTime (WithMonths a) -> DateTime (WithMonths a) -> Int
+diffMonths : DateTime (WithMonths a) -> DateTime (WithMonths b) -> Int
 diffMonths =
     diff Time.Extra.Month
 
 
-diffDays : DateTime (WithDays a) -> DateTime (WithDays a) -> Int
+diffDays : DateTime (WithDays a) -> DateTime (WithDays b) -> Int
 diffDays =
     diff Time.Extra.Day
 
 
-diffHours : DateTime (WithHours a) -> DateTime (WithHours a) -> Int
+diffHours : DateTime (WithHours a) -> DateTime (WithHours b) -> Int
 diffHours =
     diff Time.Extra.Hour
 
 
-diffMinutes : DateTime (WithMinutes a) -> DateTime (WithMinutes a) -> Int
+diffMinutes : DateTime (WithMinutes a) -> DateTime (WithMinutes b) -> Int
 diffMinutes =
     diff Time.Extra.Minute
 
 
-diffSeconds : DateTime (WithSeconds a) -> DateTime (WithSeconds a) -> Int
+diffSeconds : DateTime (WithSeconds a) -> DateTime (WithSeconds b) -> Int
 diffSeconds =
     diff Time.Extra.Second
 
 
-diffMilliseconds : DateTime (WithMillis a) -> DateTime (WithMillis a) -> Int
+diffMilliseconds : DateTime (WithMillis a) -> DateTime (WithMillis b) -> Int
 diffMilliseconds =
     diff Time.Extra.Millisecond
 
 
 {-| Internal
 -}
-diff : Time.Extra.Interval -> DateTime a -> DateTime a -> Int
+diff : Time.Extra.Interval -> DateTime a -> DateTime b -> Int
 diff interval (DateTime time1) (DateTime time2) =
     Time.Extra.diff interval Time.utc time1 time2
 
 
 
 -- MISC
-
-
-withZone : Time.Zone -> DateTime a -> DateTime a
-withZone zone (DateTime time) =
-    DateTime <| Time.millisToPosix <| Time.toMillis zone time
 
 
 yearZero : Time.Posix

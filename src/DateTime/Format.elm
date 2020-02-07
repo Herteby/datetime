@@ -36,17 +36,17 @@ day =
     Token <| toDay >> String.fromInt >> String.padLeft 2 '0'
 
 
-hour : Token (WithHours a)
+hour : Token (WithHours { a | zone : Yes })
 hour =
     Token <| toHour >> String.fromInt >> String.padLeft 2 '0'
 
 
-minute : Token (WithMinutes a)
+minute : Token (WithMinutes { a | zone : Yes })
 minute =
     Token <| toMinute >> String.fromInt >> String.padLeft 2 '0'
 
 
-second : Token (WithSeconds a)
+second : Token (WithSeconds { a | zone : Yes })
 second =
     Token <| toSecond >> String.fromInt >> String.padLeft 2 '0'
 
